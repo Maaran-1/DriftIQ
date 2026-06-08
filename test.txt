@@ -1,0 +1,371 @@
+name: driftiq-main
+services:
+  api:
+    build:
+      context: D:\DriftIQ-main (1)\DriftIQ-main\backend
+      dockerfile: ../docker/Dockerfile
+    container_name: driftiq-api
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+        required: true
+      postgres:
+        condition: service_healthy
+        required: true
+      redis:
+        condition: service_healthy
+        required: true
+    environment:
+      API_PORT: "8000"
+      APP_ENV: development
+      APP_SECRET_KEY: driftiq-dev-secret-key-min-32-characters-ok
+      AWS_ACCESS_KEY_ID: your-access-key
+      AWS_REGION: us-east-1
+      AWS_S3_BUCKET: driftiq-exports
+      AWS_SECRET_ACCESS_KEY: your-secret-key
+      BACKEND_CORS_ORIGINS: '["http://localhost:3000","http://localhost:8000"]'
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+      DATABASE_URL: postgresql+asyncpg://driftiq:driftiq_dev_secret_2024@postgres:5432/driftiq
+      DEFAULT_DATA_RETENTION_DAYS: "365"
+      DRIFT_ALERT_THRESHOLD: "40.0"
+      DRIFT_DIMENSION_SPIKE_Z: "2.5"
+      DRIFT_SUSTAINED_THRESHOLD: "25.0"
+      FIREBASE_CREDENTIALS_PATH: ./keys/firebase-service-account.json
+      FIREBASE_ENABLED: "false"
+      JWT_ACCESS_TOKEN_EXPIRE_MINUTES: "60"
+      JWT_ALGORITHM: RS256
+      JWT_PRIVATE_KEY_PATH: ./keys/private.pem
+      JWT_PUBLIC_KEY_PATH: ./keys/public.pem
+      JWT_REFRESH_TOKEN_EXPIRE_DAYS: "30"
+      LLM_FALLBACK_ENABLED: "true"
+      LLM_MODEL: gpt-4o
+      LLM_PROVIDER: openai
+      LLM_TIMEOUT_SECONDS: "30"
+      LOG_FORMAT: json
+      LOG_LEVEL: INFO
+      NGINX_PORT: "80"
+      NIGHTLY_COMPUTE_HOUR: "2"
+      NIGHTLY_COMPUTE_MINUTE: "0"
+      OPENAI_API_KEY: sk-your-openai-key-here
+      POSTGRES_DB: driftiq
+      POSTGRES_PASSWORD: driftiq_dev_secret_2024
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: driftiq
+      REDIS_PORT: "6379"
+      REDIS_URL: redis://redis:6379/0
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - -f
+        - http://localhost:8000/health
+      timeout: 10s
+      interval: 30s
+      retries: 5
+      start_period: 15s
+    networks:
+      default: null
+    ports:
+      - mode: ingress
+        target: 8000
+        published: "8000"
+        protocol: tcp
+    restart: unless-stopped
+    volumes:
+      - type: bind
+        source: D:\DriftIQ-main (1)\DriftIQ-main\keys
+        target: /app/keys
+        read_only: true
+        bind: {}
+  beat:
+    build:
+      context: D:\DriftIQ-main (1)\DriftIQ-main\backend
+      dockerfile: ../docker/Dockerfile.worker
+    command:
+      - celery
+      - -A
+      - app.tasks.celery_app.celery_app
+      - beat
+      - --loglevel=info
+      - --schedule=/tmp/celerybeat-schedule
+    container_name: driftiq-beat
+    depends_on:
+      redis:
+        condition: service_healthy
+        required: true
+      worker:
+        condition: service_healthy
+        required: true
+    environment:
+      API_PORT: "8000"
+      APP_ENV: development
+      APP_SECRET_KEY: driftiq-dev-secret-key-min-32-characters-ok
+      AWS_ACCESS_KEY_ID: your-access-key
+      AWS_REGION: us-east-1
+      AWS_S3_BUCKET: driftiq-exports
+      AWS_SECRET_ACCESS_KEY: your-secret-key
+      BACKEND_CORS_ORIGINS: '["http://localhost:3000","http://localhost:8000"]'
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+      DATABASE_URL: postgresql+asyncpg://driftiq:driftiq_dev_secret_2024@postgres:5432/driftiq
+      DEFAULT_DATA_RETENTION_DAYS: "365"
+      DRIFT_ALERT_THRESHOLD: "40.0"
+      DRIFT_DIMENSION_SPIKE_Z: "2.5"
+      DRIFT_SUSTAINED_THRESHOLD: "25.0"
+      FIREBASE_CREDENTIALS_PATH: ./keys/firebase-service-account.json
+      FIREBASE_ENABLED: "false"
+      JWT_ACCESS_TOKEN_EXPIRE_MINUTES: "60"
+      JWT_ALGORITHM: RS256
+      JWT_PRIVATE_KEY_PATH: ./keys/private.pem
+      JWT_PUBLIC_KEY_PATH: ./keys/public.pem
+      JWT_REFRESH_TOKEN_EXPIRE_DAYS: "30"
+      LLM_FALLBACK_ENABLED: "true"
+      LLM_MODEL: gpt-4o
+      LLM_PROVIDER: openai
+      LLM_TIMEOUT_SECONDS: "30"
+      LOG_FORMAT: json
+      LOG_LEVEL: INFO
+      NGINX_PORT: "80"
+      NIGHTLY_COMPUTE_HOUR: "2"
+      NIGHTLY_COMPUTE_MINUTE: "0"
+      OPENAI_API_KEY: sk-your-openai-key-here
+      POSTGRES_DB: driftiq
+      POSTGRES_PASSWORD: driftiq_dev_secret_2024
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: driftiq
+      REDIS_PORT: "6379"
+      REDIS_URL: redis://redis:6379/0
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pgrep -f 'celery.*beat' >/dev/null || exit 1
+      timeout: 10s
+      interval: 1m0s
+      retries: 3
+      start_period: 30s
+    networks:
+      default: null
+    restart: unless-stopped
+  migrate:
+    build:
+      context: D:\DriftIQ-main (1)\DriftIQ-main\backend
+      dockerfile: ../docker/Dockerfile
+    command:
+      - alembic
+      - upgrade
+      - head
+    container_name: driftiq-migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+        required: true
+    environment:
+      API_PORT: "8000"
+      APP_ENV: development
+      APP_SECRET_KEY: driftiq-dev-secret-key-min-32-characters-ok
+      AWS_ACCESS_KEY_ID: your-access-key
+      AWS_REGION: us-east-1
+      AWS_S3_BUCKET: driftiq-exports
+      AWS_SECRET_ACCESS_KEY: your-secret-key
+      BACKEND_CORS_ORIGINS: '["http://localhost:3000","http://localhost:8000"]'
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+      DATABASE_URL: postgresql+asyncpg://driftiq:driftiq_dev_secret_2024@postgres:5432/driftiq
+      DEFAULT_DATA_RETENTION_DAYS: "365"
+      DRIFT_ALERT_THRESHOLD: "40.0"
+      DRIFT_DIMENSION_SPIKE_Z: "2.5"
+      DRIFT_SUSTAINED_THRESHOLD: "25.0"
+      FIREBASE_CREDENTIALS_PATH: ./keys/firebase-service-account.json
+      FIREBASE_ENABLED: "false"
+      JWT_ACCESS_TOKEN_EXPIRE_MINUTES: "60"
+      JWT_ALGORITHM: RS256
+      JWT_PRIVATE_KEY_PATH: ./keys/private.pem
+      JWT_PUBLIC_KEY_PATH: ./keys/public.pem
+      JWT_REFRESH_TOKEN_EXPIRE_DAYS: "30"
+      LLM_FALLBACK_ENABLED: "true"
+      LLM_MODEL: gpt-4o
+      LLM_PROVIDER: openai
+      LLM_TIMEOUT_SECONDS: "30"
+      LOG_FORMAT: json
+      LOG_LEVEL: INFO
+      NGINX_PORT: "80"
+      NIGHTLY_COMPUTE_HOUR: "2"
+      NIGHTLY_COMPUTE_MINUTE: "0"
+      OPENAI_API_KEY: sk-your-openai-key-here
+      POSTGRES_DB: driftiq
+      POSTGRES_PASSWORD: driftiq_dev_secret_2024
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: driftiq
+      REDIS_PORT: "6379"
+      REDIS_URL: redis://redis:6379/0
+    networks:
+      default: null
+    restart: "no"
+  nginx:
+    container_name: driftiq-nginx
+    depends_on:
+      api:
+        condition: service_healthy
+        required: true
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - wget -qO- http://127.0.0.1/health/live >/dev/null || exit 1
+      timeout: 10s
+      interval: 30s
+      retries: 5
+      start_period: 10s
+    image: nginx:alpine
+    networks:
+      default: null
+    ports:
+      - mode: ingress
+        target: 80
+        published: "80"
+        protocol: tcp
+    restart: unless-stopped
+    volumes:
+      - type: bind
+        source: D:\DriftIQ-main (1)\DriftIQ-main\docker\nginx.conf
+        target: /etc/nginx/nginx.conf
+        read_only: true
+        bind: {}
+  postgres:
+    container_name: driftiq-postgres
+    environment:
+      POSTGRES_DB: driftiq
+      POSTGRES_PASSWORD: driftiq_dev_secret_2024
+      POSTGRES_USER: driftiq
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U driftiq
+      timeout: 5s
+      interval: 10s
+      retries: 10
+      start_period: 20s
+    image: postgres:15-alpine
+    networks:
+      default: null
+    ports:
+      - mode: ingress
+        target: 5432
+        published: "5432"
+        protocol: tcp
+    restart: unless-stopped
+    volumes:
+      - type: volume
+        source: postgres_data
+        target: /var/lib/postgresql/data
+        volume: {}
+  redis:
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --appendfsync
+      - everysec
+    container_name: driftiq-redis
+    healthcheck:
+      test:
+        - CMD
+        - redis-cli
+        - ping
+      timeout: 5s
+      interval: 10s
+      retries: 10
+      start_period: 5s
+    image: redis:7-alpine
+    networks:
+      default: null
+    ports:
+      - mode: ingress
+        target: 6379
+        published: "6379"
+        protocol: tcp
+    restart: unless-stopped
+    volumes:
+      - type: volume
+        source: redis_data
+        target: /data
+        volume: {}
+  worker:
+    build:
+      context: D:\DriftIQ-main (1)\DriftIQ-main\backend
+      dockerfile: ../docker/Dockerfile.worker
+    container_name: driftiq-worker
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+        required: true
+      postgres:
+        condition: service_healthy
+        required: true
+      redis:
+        condition: service_healthy
+        required: true
+    environment:
+      API_PORT: "8000"
+      APP_ENV: development
+      APP_SECRET_KEY: driftiq-dev-secret-key-min-32-characters-ok
+      AWS_ACCESS_KEY_ID: your-access-key
+      AWS_REGION: us-east-1
+      AWS_S3_BUCKET: driftiq-exports
+      AWS_SECRET_ACCESS_KEY: your-secret-key
+      BACKEND_CORS_ORIGINS: '["http://localhost:3000","http://localhost:8000"]'
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+      DATABASE_URL: postgresql+asyncpg://driftiq:driftiq_dev_secret_2024@postgres:5432/driftiq
+      DEFAULT_DATA_RETENTION_DAYS: "365"
+      DRIFT_ALERT_THRESHOLD: "40.0"
+      DRIFT_DIMENSION_SPIKE_Z: "2.5"
+      DRIFT_SUSTAINED_THRESHOLD: "25.0"
+      FIREBASE_CREDENTIALS_PATH: ./keys/firebase-service-account.json
+      FIREBASE_ENABLED: "false"
+      JWT_ACCESS_TOKEN_EXPIRE_MINUTES: "60"
+      JWT_ALGORITHM: RS256
+      JWT_PRIVATE_KEY_PATH: ./keys/private.pem
+      JWT_PUBLIC_KEY_PATH: ./keys/public.pem
+      JWT_REFRESH_TOKEN_EXPIRE_DAYS: "30"
+      LLM_FALLBACK_ENABLED: "true"
+      LLM_MODEL: gpt-4o
+      LLM_PROVIDER: openai
+      LLM_TIMEOUT_SECONDS: "30"
+      LOG_FORMAT: json
+      LOG_LEVEL: INFO
+      NGINX_PORT: "80"
+      NIGHTLY_COMPUTE_HOUR: "2"
+      NIGHTLY_COMPUTE_MINUTE: "0"
+      OPENAI_API_KEY: sk-your-openai-key-here
+      POSTGRES_DB: driftiq
+      POSTGRES_PASSWORD: driftiq_dev_secret_2024
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: driftiq
+      REDIS_PORT: "6379"
+      REDIS_URL: redis://redis:6379/0
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - celery -A app.tasks.celery_app.celery_app inspect ping -d celery@$$HOSTNAME || exit 1
+      timeout: 30s
+      interval: 1m0s
+      retries: 3
+      start_period: 30s
+    networks:
+      default: null
+    restart: unless-stopped
+    volumes:
+      - type: bind
+        source: D:\DriftIQ-main (1)\DriftIQ-main\keys
+        target: /app/keys
+        read_only: true
+        bind: {}
+networks:
+  default:
+    name: driftiq-network
+volumes:
+  postgres_data:
+    name: driftiq-main_postgres_data
+  redis_data:
+    name: driftiq-main_redis_data

@@ -5,13 +5,17 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.TrendingDown
+import androidx.compose.material.icons.automirrored.filled.TrendingFlat
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -36,7 +40,7 @@ fun RiskTrendScreen(
                 title = { Text("Risk Analysis", color = TextPrimary, fontWeight = FontWeight.SemiBold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, null, tint = TextPrimary)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = TextPrimary)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = BackgroundPrimary),
@@ -90,9 +94,9 @@ fun RiskTrendScreen(
                             Spacer(Modifier.height(4.dp))
                             // Trend indicator
                             val trendIcon = when (r.trend) {
-                                "improving" -> Icons.Default.TrendingDown
-                                "worsening" -> Icons.Default.TrendingUp
-                                else -> Icons.Default.TrendingFlat
+                                "improving" -> Icons.AutoMirrored.Filled.TrendingDown
+                                "worsening" -> Icons.AutoMirrored.Filled.TrendingUp
+                                else -> Icons.AutoMirrored.Filled.TrendingFlat
                             }
                             val trendColor = when (r.trend) {
                                 "improving" -> Success

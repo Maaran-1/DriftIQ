@@ -6,7 +6,6 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -94,7 +93,7 @@ class MainActivity : ComponentActivity() {
                         composable(Screen.Monthly.route) { MonthlyDashboardScreen(navController) }
                         composable(Screen.Risk.route) { RiskTrendScreen(navController) }
                         composable(Screen.Settings.route) { SettingsScreen(navController) }
-                        composable("insight_detail/{insightId}") { InsightDetailScreen(navController) }
+                        composable(Screen.InsightDetail.route) { InsightDetailScreen(navController) }
                         composable(Screen.Sleep.route) {
                             com.driftiq.app.presentation.reports.sleep.SleepTrendsScreen(navController)
                         }

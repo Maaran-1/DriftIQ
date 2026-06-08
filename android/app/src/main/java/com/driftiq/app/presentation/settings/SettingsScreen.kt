@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
@@ -50,11 +51,11 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val message by viewModel.message.collectAsState()
-    var showResetDialog by remember { mutableStateOf(false) }
+    var showResetDialog by remember { mutableStateOf(value = false) }
 
     if (message != null) {
         LaunchedEffect(message) {
-            kotlinx.coroutines.delay(3000)
+            kotlinx.coroutines.delay(3000.milliseconds)
             viewModel.clearMessage()
         }
     }
@@ -99,19 +100,18 @@ fun SettingsScreen(
 
             Spacer(Modifier.height(8.dp))
             SettingsSectionHeader("Notifications")
-            var notificationsEnabled by remember { mutableStateOf(true) }
+            var notificationsEnabled by remember { mutableStateOf(value = true) }
             SettingsToggleRow(
                 icon = Icons.Default.Notifications,
                 label = "Push Notifications",
                 subtitle = "Drift alerts and weekly insights",
                 checked = notificationsEnabled,
-                onCheckedChange = { notificationsEnabled = it },
-            )
+            ) { notificationsEnabled = it }
 
             Spacer(Modifier.height(8.dp))
             SettingsSectionHeader("Data & Privacy")
             SettingsRow(icon = Icons.Default.Download, label = "Export My Data", subtitle = "Download all your behavioral data") {}
-            SettingsRow(icon = Icons.Default.Privacy, label = "Privacy Policy", subtitle = null) {}
+            SettingsRow(icon = Icons.Default.PrivacyTip, label = "Privacy Policy", subtitle = null) {}
             SettingsRow(icon = Icons.Default.Delete, label = "Delete Account", subtitle = "Permanently delete account and data", labelColor = ErrorColor) {}
 
             Spacer(Modifier.height(8.dp))
@@ -148,8 +148,13 @@ fun SettingsScreen(
 
 @Composable
 private fun SettingsSectionHeader(title: String) {
-    Text(title, color = TextTertiary, fontSize = 11.sp, fontWeight = FontWeight.SemiBold,
-        modifier = Modifier.padding(top = 8.dp, bottom = 4.dp, start = 4.dp))
+    Text(
+        title,
+        color = TextTertiary,
+        fontSize = 11.sp,
+        fontWeight = FontWeight.SemiBold,
+        modifier = Modifier.padding(top = 8.dp, bottom = 4.dp, start = 4.dp),
+    )
 }
 
 @Composable

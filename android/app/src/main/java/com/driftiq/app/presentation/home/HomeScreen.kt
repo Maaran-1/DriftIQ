@@ -13,7 +13,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -58,7 +57,7 @@ private fun HomeContent(summary: DashboardSummary, navController: NavController,
     ) {
         item { GreetingHeader() }
         item { WellnessGaugeCard(summary.wellnessScore, summary.riskLevel, summary.riskLabel) }
-        item { MetricsRow(summary.driftScore, summary.baselineDays, summary.calibrationProgress, navController) }
+        item { MetricsRow(summary.driftScore, summary.baselineDays, navController) }
         if (summary.highlights.isNotEmpty()) {
             item { HighlightsSection(summary.highlights) }
         }
@@ -96,7 +95,9 @@ private fun WellnessGaugeCard(wellnessScore: Int, riskLevel: Int, riskLabel: Str
             modifier = Modifier
                 .fillMaxWidth()
                 .background(
-                    Brush.verticalGradient(listOf(BackgroundCard, BackgroundPrimary))
+                    Brush.verticalGradient(
+                        listOf(BackgroundCard, BackgroundPrimary),
+                    ),
                 )
                 .padding(24.dp),
         ) {
@@ -106,7 +107,7 @@ private fun WellnessGaugeCard(wellnessScore: Int, riskLevel: Int, riskLabel: Str
                     CircularWellnessGauge(animatedScore, riskCol)
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            "$animatedScore",
+                            animatedScore.toString(),
                             color = TextPrimary,
                             fontSize = 42.sp,
                             fontWeight = FontWeight.ExtraBold,
@@ -140,7 +141,7 @@ private fun CircularWellnessGauge(score: Int, riskColor: Color) {
     val sweepAngle = (score / 100f) * 270f
     Canvas(modifier = Modifier.fillMaxSize()) {
         val strokeWidth = 14.dp.toPx()
-        val radius = size.minDimension / 2f - strokeWidth / 2
+        val radius = (size.minDimension / 2f) - (strokeWidth / 2)
         val center = Offset(size.width / 2f, size.height / 2f)
         // Background track
         drawArc(
@@ -164,27 +165,25 @@ private fun CircularWellnessGauge(score: Int, riskColor: Color) {
 }
 
 @Composable
-private fun MetricsRow(driftScore: Float, baselineDays: Int, progress: Float, navController: NavController) {
+private fun MetricsRow(driftScore: Float, baselineDays: Int, navController: NavController) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         MetricCard(
             label = "Behavioral Drift",
-            value = "${driftScore.toInt()}",
+            value = driftScore.toInt().toString(),
             unit = "/ 100",
             color = if (driftScore > 60) Warning else BrandPrimary,
             modifier = Modifier.weight(1f),
-            onClick = { navController.navigate(Screen.DriftDetail.route) },
-        )
+        ) { navController.navigate(Screen.DriftDetail.route) }
         MetricCard(
             label = "Baseline Days",
-            value = "$baselineDays",
+            value = baselineDays.toString(),
             unit = "days",
             color = BrandSecondary,
             modifier = Modifier.weight(1f),
-            onClick = { navController.navigate(Screen.Risk.route) },
-        )
+        ) { navController.navigate(Screen.Risk.route) }
     }
 }
 

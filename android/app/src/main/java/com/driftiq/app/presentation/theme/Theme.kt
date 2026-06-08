@@ -6,13 +6,11 @@ import androidx.compose.ui.graphics.Color
 
 // Design System Color Palette
 val BackgroundPrimary = Color(0xFF0D0D1A)
-val BackgroundSecondary = Color(0xFF13132A)
 val BackgroundCard = Color(0xFF1A1A35)
 val BackgroundElevated = Color(0xFF22224A)
 
 val BrandPrimary = Color(0xFF6C63FF)
 val BrandSecondary = Color(0xFF9D96FF)
-val BrandAccent = Color(0xFFFF6B9D)
 
 val TextPrimary = Color(0xFFFFFFFF)
 val TextSecondary = Color(0xFFB0B0D0)

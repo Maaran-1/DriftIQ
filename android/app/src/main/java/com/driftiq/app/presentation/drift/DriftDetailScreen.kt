@@ -5,14 +5,13 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -45,7 +44,7 @@ fun DriftDetailScreen(
                 title = { Text("Behavioral Drift", color = TextPrimary, fontWeight = FontWeight.SemiBold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, null, tint = TextPrimary)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = TextPrimary)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = BackgroundPrimary),
@@ -105,7 +104,7 @@ private fun TodayDriftCard(today: DriftScore) {
             Spacer(Modifier.height(8.dp))
             Row(verticalAlignment = Alignment.Bottom) {
                 Text(
-                    "${today.compositeDrift.toInt()}",
+                    today.compositeDrift.toInt().toString(),
                     color = if (today.compositeDrift > 60) Warning else BrandPrimary,
                     fontSize = 52.sp,
                     fontWeight = FontWeight.ExtraBold,
@@ -121,7 +120,9 @@ private fun TodayDriftCard(today: DriftScore) {
                         .fillMaxHeight()
                         .clip(RoundedCornerShape(3.dp))
                         .background(
-                            Brush.horizontalGradient(listOf(BrandPrimary, if (today.compositeDrift > 60) Warning else BrandSecondary))
+                            Brush.horizontalGradient(
+                                listOf(BrandPrimary, if (today.compositeDrift > 60) Warning else BrandSecondary),
+                            ),
                         ),
                 )
             }
@@ -137,8 +138,10 @@ private fun TodayDriftCard(today: DriftScore) {
                             shape = RoundedCornerShape(8.dp),
                             color = BrandPrimary.copy(alpha = 0.1f),
                         ) {
-                            Text(dim.replace("_", " ").replaceFirstChar { it.uppercase() },
-                                color = BrandSecondary, fontSize = 11.sp,
+                            Text(
+                                dim.replace("_", " ").replaceFirstChar { it.uppercase() },
+                                color = BrandSecondary,
+                                fontSize = 11.sp,
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                             )
                         }
@@ -159,13 +162,14 @@ private fun DimensionBreakdownCard(today: DriftScore) {
     ) {
         Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("Dimension Z-Scores", color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-            today.dimensionZScores
-                .entries
-                .sortedByDescending { kotlin.math.abs(it.value) }
-                .take(6)
-                .forEach { (dim, z) ->
-                    DimensionRow(dim, z)
-                }
+    today.dimensionZScores
+        .entries
+        .asSequence()
+        .sortedByDescending { kotlin.math.abs(it.value) }
+        .take(6)
+        .forEach { (dim, z) ->
+            DimensionRow(dim, z)
+        }
         }
     }
 }
@@ -198,8 +202,10 @@ private fun DimensionRow(dimension: String, zScore: Float) {
             )
         }
         Text(
-            "${if (zScore > 0) "+" else ""}${String.format("%.2f", zScore)}σ",
-            color = color, fontSize = 11.sp, modifier = Modifier.width(52.dp),
+            "${if (zScore > 0) "+" else ""}${String.format(java.util.Locale.US, "%.2f", zScore)}σ",
+            color = color,
+            fontSize = 11.sp,
+            modifier = Modifier.width(52.dp),
         )
     }
 }
@@ -234,12 +240,3 @@ private fun DriftHistoryChart(history: List<DriftHistoryEntry>) {
         }
     }
 }
-
-// Extension needed for BoxScope clip
-private fun Modifier.clip(shape: RoundedCornerShape) = this.then(Modifier.graphicsLayer {
-    clip = true
-    this.shape = shape
-})
-
-private val Modifier.Companion.graphicsLayer
-    get() = Modifier
