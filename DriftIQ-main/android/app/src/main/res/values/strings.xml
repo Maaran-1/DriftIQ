@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">DriftIQ</string>
+
+    <!-- Welcome / Onboarding -->
+    <string name="welcome_headline">Understand Your\nBehavioral Patterns</string>
+    <string name="welcome_subtext">DriftIQ passively monitors your device usage to help you understand how your daily behavioral patterns change over time.</string>
+    <string name="welcome_cta">Get Started</string>
+    <string name="welcome_sign_in">Already have an account? Sign In</string>
+
+    <!-- Consent Screen -->
+    <string name="consent_title">What DriftIQ Collects</string>
+    <string name="consent_agree">I Agree &amp; Continue</string>
+    <string name="consent_privacy_policy">View Full Privacy Policy</string>
+    <string name="consent_never_collect_title">What We Never Collect</string>
+    <string name="consent_never_collect_body">Message content, passwords, financial data, location, keystrokes, photos, or any personal communications.</string>
+
+    <!-- Permissions -->
+    <string name="permission_usage_title">App Usage Access</string>
+    <string name="permission_usage_body">DriftIQ needs access to your app usage data to track behavioral patterns. This is the core of your Behavioral Digital Twin. No app content is ever accessed — only which apps you used and for how long.</string>
+    <string name="permission_usage_cta">Grant Access</string>
+    <string name="permission_notification_title">Stay Informed</string>
+    <string name="permission_notification_body">Enable notifications to receive weekly insights, drift alerts, and baseline updates. You control what types of notifications you receive.</string>
+    <string name="permission_notification_cta">Allow Notifications</string>
+    <string name="permission_skip">Skip for Now</string>
+
+    <!-- Auth -->
+    <string name="create_account">Create Account</string>
+    <string name="sign_in">Sign In</string>
+    <string name="email_hint">Email address</string>
+    <string name="password_hint">Password (min. 8 characters)</string>
+    <string name="forgot_password">Forgot Password?</string>
+    <string name="create_account_instead">Create Account</string>
+    <string name="sign_in_instead">Already have an account? Sign In</string>
+
+    <!-- Calibration -->
+    <string name="calibration_title">Building Your Baseline</string>
+    <string name="calibration_body">DriftIQ is learning your unique behavioral patterns. This takes 7–14 days of normal device usage. The more you use your phone naturally, the more accurate your baseline becomes.</string>
+    <string name="calibration_days_format">%d of 14 days complete</string>
+    <string name="calibration_ready_in">Estimated ready in %d days</string>
+    <string name="calibration_view_partial">View Partial Dashboard</string>
+
+    <!-- Home Dashboard -->
+    <string name="home_greeting_morning">Good morning</string>
+    <string name="home_greeting_afternoon">Good afternoon</string>
+    <string name="home_greeting_evening">Good evening</string>
+    <string name="wellness_score_label">Wellness Score</string>
+    <string name="drift_score_label">Behavioral Drift</string>
+    <string name="risk_level_label">Risk Level</string>
+    <string name="highlights_title">Today\'s Highlights</string>
+    <string name="no_data_yet">No data yet. Keep using your device naturally to build your baseline.</string>
+
+    <!-- Navigation -->
+    <string name="nav_home">Home</string>
+    <string name="nav_timeline">Timeline</string>
+    <string name="nav_reports">Reports</string>
+    <string name="nav_settings">Settings</string>
+
+    <!-- Risk Levels -->
+    <string name="risk_0">Healthy</string>
+    <string name="risk_1">Observation</string>
+    <string name="risk_2">Mild Concern</string>
+    <string name="risk_3">Moderate Concern</string>
+    <string name="risk_4">High Concern</string>
+    <string name="risk_5">Critical</string>
+
+    <!-- Settings -->
+    <string name="settings_account">Account</string>
+    <string name="settings_data">Data &amp; Privacy</string>
+    <string name="settings_notifications">Notifications</string>
+    <string name="settings_calibration">Calibration</string>
+    <string name="settings_about">About</string>
+    <string name="settings_export_data">Export My Data</string>
+    <string name="settings_delete_account">Delete Account</string>
+    <string name="settings_reset_baseline">Reset Baseline</string>
+    <string name="settings_version">Version %s</string>
+
+    <!-- Notifications -->
+    <string name="notification_collection_title">DriftIQ is running</string>
+    <string name="notification_collection_body">Monitoring your behavioral patterns in the background</string>
+    <string name="notification_channel_collection">Data Collection</string>
+    <string name="notification_channel_alerts">Behavioral Alerts</string>
+    <string name="notification_channel_insights">Insights</string>
+
+    <!-- Errors -->
+    <string name="error_network">Unable to connect. Please check your internet connection.</string>
+    <string name="error_generic">Something went wrong. Please try again.</string>
+    <string name="error_invalid_credentials">Invalid email or password.</string>
+    <string name="error_email_taken">This email is already registered.</string>
+    <string name="error_password_too_short">Password must be at least 8 characters.</string>
+</resources>

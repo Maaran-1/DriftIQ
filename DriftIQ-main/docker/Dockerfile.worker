@@ -1,0 +1,28 @@
+# DriftIQ Celery Worker
+# Shares the same dependency layer as the API for consistency.
+FROM python:3.11-slim
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc libpq-dev procps \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+# Create keys directory — actual keys mounted at runtime
+RUN mkdir -p /app/keys
+
+# Non-root user
+RUN useradd -m -u 1001 driftiq && chown -R driftiq:driftiq /app
+USER driftiq
+
+# Default: run as Celery worker
+# Beat scheduler overrides this command via docker-compose.yml
+CMD ["celery", "-A", "app.tasks.celery_app.celery_app", "worker", \
+     "--loglevel=info", "--concurrency=4", \
+     "-E"]

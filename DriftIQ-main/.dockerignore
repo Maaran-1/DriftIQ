@@ -1,0 +1,54 @@
+# Version control
+.git
+.gitignore
+**/.gitattributes
+
+# Python artifacts
+**/__pycache__
+**/*.pyc
+**/*.pyo
+**/*.pyd
+**/.Python
+**/*.egg-info
+**/dist
+**/build
+**/.eggs
+**/*.egg
+**/.tox
+**/.mypy_cache
+**/.pytest_cache
+**/.ruff_cache
+
+# Virtual environments
+**/.venv
+**/venv
+**/env
+**/.env.local
+
+# IDE
+**/.idea
+**/.vscode
+**/*.swp
+**/*.swo
+
+# Test databases
+**/test.db
+**/*.db
+
+# Logs
+**/*.log
+**/logs/
+
+# Keys — NEVER bake into image; mounted at runtime
+keys/
+
+# Docker-related (avoid nested builds)
+docker/
+docker-compose*.yml
+
+# Android source — only backend goes in Docker
+android/
+
+# Documentation
+**/*.md
+docs/
