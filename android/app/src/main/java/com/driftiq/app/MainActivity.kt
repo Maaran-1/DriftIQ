@@ -24,6 +24,7 @@ import com.driftiq.app.presentation.risk.RiskTrendScreen
 import com.driftiq.app.presentation.settings.SettingsScreen
 import com.driftiq.app.presentation.insight.InsightDetailScreen
 import com.driftiq.app.service.CollectionService
+import com.driftiq.app.service.SyncWorker
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -62,8 +63,14 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Start collection service
+        // Start the foreground collection service
         CollectionService.start(this)
+
+        // Schedule periodic sync worker (KEEP policy — safe to call on every launch)
+        SyncWorker.schedule(this)
+
+        // Trigger an immediate sync when the app opens so dashboard refreshes quickly
+        SyncWorker.runNow(this)
 
         val isLoggedIn = runBlocking { dataStore.accessToken.first() != null }
         val isOnboarded = runBlocking { dataStore.isOnboardingComplete.first() }

@@ -1,5 +1,6 @@
 package com.driftiq.app.service
 
+import android.app.usage.UsageEvents
 import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.util.Log
@@ -10,24 +11,30 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Collects Android UsageStats and classifies app sessions into behavioral categories.
+ * Collects Android app usage sessions using the UsageEvents API.
  *
- * Category classification uses a hardcoded map for offline support.
- * The backend's ML pipeline uses the category field for feature extraction:
- *   SOCIAL, PRODUCTIVITY, ENTERTAINMENT, LEARNING, HEALTH, UTILITY, COMMUNICATION
+ * Uses MOVE_TO_FOREGROUND / MOVE_TO_BACKGROUND event pairs to reconstruct
+ * individual app sessions with accurate start/end timestamps.
+ *
+ * queryUsageStats(INTERVAL_BEST) returns cumulative aggregates — it does NOT
+ * produce per-session data and its firstTimeStamp/lastTimeStamp fields span
+ * the entire aggregation interval, making incremental collection unreliable.
+ * UsageEvents.queryEvents() gives us individual lifecycle events that can be
+ * correctly windowed by lastCollectionTime.
  */
 @Singleton
 class UsageStatsCollector @Inject constructor(
     @ApplicationContext private val context: Context,
 ) {
+    // Start slightly in the past on first run to capture any recent sessions
     private var lastCollectionTime: Long = System.currentTimeMillis() - LOOKBACK_MS
 
     companion object {
         private const val TAG = "UsageStatsCollector"
-        private const val LOOKBACK_MS = 15 * 60 * 1000L
+        private const val LOOKBACK_MS = 30 * 60 * 1000L  // 30 min on first run
         private const val MIN_SESSION_SECONDS = 5
 
-        // System packages to always exclude from behavioral data
+        // System packages to always exclude
         private val SYSTEM_PACKAGES = setOf(
             "android",
             "com.android.systemui",
@@ -40,17 +47,12 @@ class UsageStatsCollector @Inject constructor(
             "com.android.inputmethod.latin",
             "com.google.android.gms",
             "com.google.android.gsf",
-            "com.google.android.gms.persistent",
             "com.android.packageinstaller",
-            "com.android.vending",      // Play Store system background
+            "com.android.vending",
             "com.android.phone",
+            "com.driftiq.app",
         )
 
-        /**
-         * App package → behavioral category mapping.
-         * Covers the top 200 Android apps by install count across key categories.
-         * Apps not in this map are tagged as null (backend defaults to UTILITY).
-         */
         val CATEGORY_MAP: Map<String, String> = mapOf(
             // ── Social ─────────────────────────────────────────────
             "com.instagram.android" to "SOCIAL",
@@ -62,14 +64,14 @@ class UsageStatsCollector @Inject constructor(
             "com.pinterest" to "SOCIAL",
             "com.tumblr" to "SOCIAL",
             "com.vk.vkontakte" to "SOCIAL",
-            "com.zhiliaoapp.musically" to "SOCIAL",     // TikTok
-            "com.ss.android.ugc.trill" to "SOCIAL",     // TikTok (alt)
+            "com.zhiliaoapp.musically" to "SOCIAL",
+            "com.ss.android.ugc.trill" to "SOCIAL",
             "com.bereal.ft" to "SOCIAL",
             "com.discord" to "SOCIAL",
             "com.threads.app" to "SOCIAL",
             "com.linkedin.android" to "SOCIAL",
             "com.meetup" to "SOCIAL",
-            "com.skype.raider" to "SOCIAL",             // More social than productivity in practice
+            "com.skype.raider" to "SOCIAL",
             "com.clubhouse.clubhouse" to "SOCIAL",
 
             // ── Communication ───────────────────────────────────────
@@ -83,7 +85,7 @@ class UsageStatsCollector @Inject constructor(
             "us.zoom.videomeetings" to "COMMUNICATION",
             "com.webex.meetings" to "COMMUNICATION",
             "com.signal.android" to "COMMUNICATION",
-            "com.google.android.talk" to "COMMUNICATION",  // Google Messages
+            "com.google.android.talk" to "COMMUNICATION",
             "com.google.android.apps.messaging" to "COMMUNICATION",
             "com.android.mms" to "COMMUNICATION",
 
@@ -117,7 +119,7 @@ class UsageStatsCollector @Inject constructor(
             "com.google.android.youtube" to "ENTERTAINMENT",
             "com.google.android.youtube.music" to "ENTERTAINMENT",
             "com.spotify.music" to "ENTERTAINMENT",
-            "com.amazon.avod.thirdpartyclient" to "ENTERTAINMENT",  // Prime Video
+            "com.amazon.avod.thirdpartyclient" to "ENTERTAINMENT",
             "com.disney.disneyplus" to "ENTERTAINMENT",
             "com.hbo.hbonow" to "ENTERTAINMENT",
             "com.hulu.plus" to "ENTERTAINMENT",
@@ -134,7 +136,6 @@ class UsageStatsCollector @Inject constructor(
             "tv.kodi.kodi" to "ENTERTAINMENT",
             "com.vimeo.android.videoapp" to "ENTERTAINMENT",
             "com.espn.score_center" to "ENTERTAINMENT",
-            "air.tv.ouya.discover" to "ENTERTAINMENT",
 
             // ── Learning ────────────────────────────────────────────
             "org.duolingo" to "LEARNING",
@@ -145,14 +146,12 @@ class UsageStatsCollector @Inject constructor(
             "com.khanacademy.android" to "LEARNING",
             "com.busuu.android" to "LEARNING",
             "com.babbel.mobile.android.en" to "LEARNING",
-            "com.pocketpills" to "LEARNING",
             "com.skillshare.app" to "LEARNING",
             "com.masterclass.android" to "LEARNING",
             "com.brilliant.android" to "LEARNING",
             "com.chess" to "LEARNING",
             "com.sololearn" to "LEARNING",
             "com.quizlet.quizletandroid" to "LEARNING",
-            "com.readwhere.reader" to "LEARNING",
             "com.wattpad.mobile" to "LEARNING",
             "com.blinkslabs.blinkist.android" to "LEARNING",
             "com.wikipedia" to "LEARNING",
@@ -160,32 +159,27 @@ class UsageStatsCollector @Inject constructor(
             // ── Health ──────────────────────────────────────────────
             "com.google.android.apps.fitness" to "HEALTH",
             "com.fitbit.FitbitMobile" to "HEALTH",
-            "com.stryd.app" to "HEALTH",
             "com.samsung.android.shealth" to "HEALTH",
             "com.strava" to "HEALTH",
             "com.garmin.android.apps.connectmobile" to "HEALTH",
-            "com.nianticlabs.pokemongo" to "HEALTH",   // Walking game
+            "com.nianticlabs.pokemongo" to "HEALTH",
             "com.calm.android" to "HEALTH",
             "com.headspace.android" to "HEALTH",
-            "com.insight.app" to "HEALTH",
             "com.cronometer.android" to "HEALTH",
             "com.myfitnesspal.android" to "HEALTH",
             "com.nike.ntc" to "HEALTH",
-            "com.lego.minifigures" to "HEALTH",
             "com.runtastic.android" to "HEALTH",
             "com.peloton.android" to "HEALTH",
 
             // ── Utility ─────────────────────────────────────────────
             "com.google.android.apps.maps" to "UTILITY",
             "com.waze" to "UTILITY",
-            "com.uber.driver" to "UTILITY",
             "com.ubercab" to "UTILITY",
             "com.lyft.android" to "UTILITY",
             "com.google.android.apps.translate" to "UTILITY",
             "com.paypal.android.p2pmobile" to "UTILITY",
             "com.venmo" to "UTILITY",
             "com.cashapp" to "UTILITY",
-            "com.intuit.turbotax.mobile" to "UTILITY",
             "com.weather.Weather" to "UTILITY",
             "com.google.android.calendar" to "UTILITY",
             "com.google.android.contacts" to "UTILITY",
@@ -198,8 +192,12 @@ class UsageStatsCollector @Inject constructor(
     }
 
     /**
-     * Collect usage stats since the last collection time.
-     * Filters out system packages and very short sessions (<5 sec).
+     * Collect app usage sessions since the last collection time.
+     *
+     * Queries individual UsageEvents and pairs MOVE_TO_FOREGROUND with
+     * MOVE_TO_BACKGROUND to reconstruct sessions. Sessions without a matching
+     * BACKGROUND event (app still open) are skipped — they'll be captured
+     * on the next collection cycle when the user leaves the app.
      */
     fun collectRecentEvents(): List<AppUsageEventEntity> {
         val usm = context.getSystemService(Context.USAGE_STATS_SERVICE) as? UsageStatsManager
@@ -209,54 +207,73 @@ class UsageStatsCollector @Inject constructor(
             }
 
         val now = System.currentTimeMillis()
-
-        // Slight overlap to avoid gaps between collection windows
-        val queryStart = lastCollectionTime - 60_000
-        val stats = usm.queryUsageStats(UsageStatsManager.INTERVAL_BEST, queryStart, now)
-            ?: return emptyList()
-
+        // Overlap 60s to avoid gaps from clock skew between collection cycles
+        val queryStart = lastCollectionTime - 60_000L
         val deviceId = getDeviceId()
+
         val events = mutableListOf<AppUsageEventEntity>()
 
-        for (stat in stats) {
-            if (stat.packageName in SYSTEM_PACKAGES) continue
-            if (stat.totalTimeInForeground <= 0) continue
+        // Track foreground start times per package
+        val foregroundStarts = mutableMapOf<String, Long>()
 
-            val durationSeconds = (stat.totalTimeInForeground / 1000).toInt()
-            if (durationSeconds < MIN_SESSION_SECONDS) continue
+        val usageEvents = usm.queryEvents(queryStart, now)
+        val event = UsageEvents.Event()
 
-            val sessionStart = stat.firstTimeStamp
-            val sessionEnd = stat.lastTimeStamp
+        while (usageEvents.hasNextEvent()) {
+            usageEvents.getNextEvent(event)
 
-            // Skip sessions entirely before last collection
-            if (sessionEnd < lastCollectionTime) continue
+            val pkg = event.packageName ?: continue
+            if (pkg in SYSTEM_PACKAGES) continue
 
-            events.add(
-                AppUsageEventEntity(
-                    packageName = stat.packageName,
-                    sessionStart = sessionStart,
-                    sessionEnd = sessionEnd,
-                    durationSeconds = durationSeconds,
-                    category = CATEGORY_MAP[stat.packageName],
-                    deviceId = deviceId,
-                )
-            )
+            when (event.eventType) {
+                UsageEvents.Event.ACTIVITY_RESUMED -> {
+                    // Record when this app came to foreground
+                    foregroundStarts[pkg] = event.timeStamp
+                }
+
+                UsageEvents.Event.ACTIVITY_PAUSED -> {
+                    val startTime = foregroundStarts.remove(pkg) ?: continue
+                    val endTime = event.timeStamp
+
+                    // Skip sessions that started before our last collection window
+                    // (we may have already recorded them)
+                    if (endTime <= lastCollectionTime) continue
+
+                    val durationMs = endTime - startTime
+                    val durationSeconds = (durationMs / 1000).toInt()
+
+                    if (durationSeconds < MIN_SESSION_SECONDS) continue
+
+                    events.add(
+                        AppUsageEventEntity(
+                            packageName = pkg,
+                            sessionStart = startTime,
+                            sessionEnd = endTime,
+                            durationSeconds = durationSeconds,
+                            category = CATEGORY_MAP[pkg],
+                            deviceId = deviceId,
+                        )
+                    )
+                }
+            }
         }
 
         lastCollectionTime = now
-        Log.d(TAG, "Collected ${events.size} events from ${stats.size} stat records")
+        Log.d(TAG, "Collected ${events.size} completed sessions (${foregroundStarts.size} apps still in foreground)")
         return events
     }
 
     /**
-     * Check if the app has usage stats permission.
-     * This is a special Android permission that must be granted in system settings.
+     * Check if the app has the PACKAGE_USAGE_STATS permission.
+     * This special permission must be granted in Settings → Digital Wellbeing or
+     * Settings → Apps → Special app access → Usage access.
      */
     fun hasUsageStatsPermission(): Boolean {
         val usm = context.getSystemService(Context.USAGE_STATS_SERVICE) as? UsageStatsManager
             ?: return false
         val now = System.currentTimeMillis()
-        val stats = usm.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, now - 1000, now)
+        // Query a short recent window — if permission is denied this returns empty
+        val stats = usm.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, now - 60_000, now)
         return stats != null && stats.isNotEmpty()
     }
 

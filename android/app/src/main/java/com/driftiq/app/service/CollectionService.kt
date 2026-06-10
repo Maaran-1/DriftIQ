@@ -13,12 +13,14 @@ import kotlinx.coroutines.*
 import javax.inject.Inject
 
 /**
- * Foreground service that periodically collects Android usage stats
- * and persists them to Room for later sync to the DriftIQ backend.
+ * Foreground service that runs continuously to:
+ *   1. Collect Android usage events every 15 minutes via UsageStatsCollector
+ *   2. Persist them to Room (local buffer)
+ *   3. Trigger WorkManager SyncWorker to upload buffered events to the backend
  *
- * Runs as a foreground service to ensure OS does not kill it on low memory.
- * Collection interval is 15 minutes — coarser granularity is sufficient
- * for behavioral pattern analysis (no real-time requirements).
+ * The service runs in the foreground to ensure the OS does not kill it.
+ * WorkManager handles the actual network sync independently, so sync survives
+ * even if this service is temporarily stopped.
  */
 @AndroidEntryPoint
 class CollectionService : Service() {
@@ -70,6 +72,8 @@ class CollectionService : Service() {
         collectionJob = serviceScope.launch {
             while (isActive) {
                 collectAndPersist()
+                // Trigger sync after collection — WorkManager handles network constraint
+                SyncWorker.runNow(this@CollectionService)
                 delay(POLL_INTERVAL_MS)
             }
         }
@@ -84,16 +88,14 @@ class CollectionService : Service() {
             val events = usageStatsCollector.collectRecentEvents()
             if (events.isNotEmpty()) {
                 eventDao.insertAll(events)
-                Log.d(TAG, "Collected and persisted ${events.size} usage events")
+                Log.i(TAG, "Collected and persisted ${events.size} usage events")
             } else {
                 Log.v(TAG, "No new usage events in this collection window")
             }
         } catch (e: SecurityException) {
-            // Usage stats permission revoked at runtime
             Log.w(TAG, "Usage stats permission revoked during collection: ${e.message}")
         } catch (e: Exception) {
-            // Log all other errors — important for debugging production issues
-            Log.e(TAG, "Unexpected error during usage stats collection", e)
+            Log.e(TAG, "Error during usage stats collection", e)
         }
     }
 

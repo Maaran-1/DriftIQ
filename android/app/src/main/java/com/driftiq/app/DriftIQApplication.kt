@@ -3,21 +3,37 @@ package com.driftiq.app
 import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import androidx.hilt.work.HiltWorkerFactory
+import androidx.work.Configuration
 import dagger.hilt.android.HiltAndroidApp
 import timber.log.Timber
+import javax.inject.Inject
 
+/**
+ * Application class.
+ *
+ * Implements [Configuration.Provider] to inject HiltWorkerFactory into WorkManager.
+ * This is required for Hilt-injected WorkManager workers (e.g. SyncWorker).
+ * WorkManager must NOT be auto-initialised (see AndroidManifest.xml) when using
+ * a custom factory — the provider pattern handles lazy initialisation.
+ */
 @HiltAndroidApp
-class DriftIQApplication : Application() {
+class DriftIQApplication : Application(), Configuration.Provider {
+
+    @Inject lateinit var workerFactory: HiltWorkerFactory
+
+    override val workManagerConfiguration: Configuration
+        get() = Configuration.Builder()
+            .setWorkerFactory(workerFactory)
+            .build()
 
     override fun onCreate() {
         super.onCreate()
 
-        // Logging
         if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
         }
 
-        // Create notification channels
         createNotificationChannels()
     }
 

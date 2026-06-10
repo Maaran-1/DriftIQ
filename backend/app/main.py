@@ -14,6 +14,7 @@ from app.core.config import settings
 from app.core.exceptions import DriftIQException
 from app.api import auth, events, twin, drift, risk, insights, dashboard
 from app.api import settings as settings_router
+from app.api import admin as admin_router
 
 logger = logging.getLogger(__name__)
 limiter = Limiter(key_func=get_remote_address)
@@ -182,6 +183,10 @@ def create_app() -> FastAPI:
     app.include_router(insights.router, prefix=prefix)
     app.include_router(dashboard.router, prefix=prefix)
     app.include_router(settings_router.router, prefix=prefix)
+
+    # Admin endpoints — dev/staging only, never in production
+    if not settings.is_production:
+        app.include_router(admin_router.router, prefix=prefix)
 
     return app
 

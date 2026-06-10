@@ -44,7 +44,7 @@
             android:exported="false"
             android:foregroundServiceType="dataSync" />
 
-        <!-- Boot Receiver -->
+        <!-- Boot Receiver — restarts foreground service and WorkManager after reboot -->
         <receiver
             android:name=".service.BootReceiver"
             android:exported="true"
@@ -63,6 +63,22 @@
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
         </service>
+
+        <!--
+            Disable WorkManager's default ContentProvider-based auto-initialiser.
+            DriftIQApplication implements Configuration.Provider with HiltWorkerFactory,
+            which is required for Hilt-injected workers. Auto-init conflicts with this.
+        -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="androidx.work.WorkManagerInitializer"
+                android:value="androidx.startup"
+                tools:node="remove" />
+        </provider>
 
     </application>
 
